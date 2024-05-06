@@ -1,31 +1,27 @@
 from pyspark.sql import SparkSession
-import pyarrow as pa
-import pyarrow.spark as pas
+from string_py import Str
+
+# Custom function to execute on each partition
+def custom_function(iterator):
+    for item in iterator:
+        # Perform custom processing on each item
+        yield Str(item).first(5)  # Example: Convert each item to uppercase
 
 # Initialize Spark session
 spark = SparkSession.builder \
-    .appName("demo") \
+    .appName("Custom Function Execution") \
     .getOrCreate()
 
-# Create Spark DataFrame
-df = spark.createDataFrame(
-    [
-        ("sue", 32),
-        ("li", 3),
-        ("bob", 75),
-        ("heo", 13),
-    ],
-    ["first_name", "age"],
-)
+# Create RDD or DataFrame
+data = ["sue", "li", "bob", "heo"]
+rdd = spark.sparkContext.parallelize(data)
 
-# Show Spark DataFrame
-df.show()
+# Apply custom function on each partition
+result_rdd = rdd.mapPartitions(custom_function)
 
-# Convert Spark DataFrame to Pandas DataFrame using Arrow
-pandas_df = pas.DataFrame(df).to_pandas()
-
-# Show Pandas DataFrame
-print(pandas_df)
+# Collect and show results
+result_list = result_rdd.collect()
+print(result_list)
 
 # Stop Spark session
 spark.stop()
